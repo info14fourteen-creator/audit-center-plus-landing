@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://info14fourteen-creator.github.io/audit-center-plus-landing/sitemap.xml
