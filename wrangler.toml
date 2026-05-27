@@ -1,0 +1,7 @@
+name = "audit-center-plus-chat"
+main = "worker/chat-proxy.js"
+compatibility_date = "2026-05-27"
+
+[vars]
+OPENAI_ASSISTANT_ID = "asst_7Jbm61vLl63GVnOhQwZw6G8J"
+ALLOWED_ORIGIN = "https://info14fourteen-creator.github.io"

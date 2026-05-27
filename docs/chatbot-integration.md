@@ -30,6 +30,35 @@ knowledge_file_id=file-VyoojaooBD1vEiiSkbQHoS
 
 Сейчас, пока endpoint не задан, чат работает в статическом режиме: отвечает по встроенной базе сайта и направляет на консультацию.
 
+В репозитории есть готовый Vercel-compatible endpoint:
+
+```text
+api/chat.js
+```
+
+Для реального подключения нужно развернуть этот проект на Vercel или другом Node-хостинге и задать переменные окружения:
+
+```text
+OPENAI_API_KEY=...
+OPENAI_ASSISTANT_ID=asst_7Jbm61vLl63GVnOhQwZw6G8J
+ALLOWED_ORIGIN=https://info14fourteen-creator.github.io
+```
+
+После деплоя endpoint вида `https://<project>.vercel.app/api/chat` нужно прописать на странице:
+
+```html
+<script>
+  window.ACP_CHAT_ENDPOINT = "https://<project>.vercel.app/api/chat";
+</script>
+```
+
+Фронт уже умеет:
+
+- показывать случайную задержку и индикатор набора;
+- объединять несколько сообщений клиента, если они пришли до ответа;
+- отменять устаревший запрос и готовить новый ответ по полному контексту;
+- передавать историю диалога в backend.
+
 Пример контракта endpoint:
 
 ```http
