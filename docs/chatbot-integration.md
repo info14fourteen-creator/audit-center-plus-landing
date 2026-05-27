@@ -8,7 +8,11 @@
 assistant_id=asst_7Jbm61vLl63GVnOhQwZw6G8J
 model=gpt-4o-mini
 name=Аудит Центр Плюс - AI-консультант
+vector_store_id=vs_6a16fb230e308191bd40684f014145e0
+knowledge_file_id=file-VyoojaooBD1vEiiSkbQHoS
 ```
+
+К ассистенту подключен `file_search`: база знаний загружена из файла `Информация о компании и услугах.docx` и включает услуги, результаты, этапы, принципы работы и контакты.
 
 Безопасная схема:
 
