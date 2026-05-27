@@ -417,12 +417,28 @@ function initChat() {
   });
 }
 
+function initFloatingChatVisibility() {
+  const targets = document.querySelectorAll("#contacts, .footer");
+  if (!targets.length || !("IntersectionObserver" in window)) return;
+
+  const update = (entries) => {
+    const shouldHide = entries.some((entry) => entry.isIntersecting);
+    document.body.classList.toggle("hide-chat-launcher", shouldHide);
+  };
+
+  const observer = new IntersectionObserver(update, {
+    threshold: 0.18,
+  });
+  targets.forEach((target) => observer.observe(target));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initIcons();
   initMenu();
   initLeadForm();
   initCookieBanner();
   initChat();
+  initFloatingChatVisibility();
   setHeaderState();
 });
 

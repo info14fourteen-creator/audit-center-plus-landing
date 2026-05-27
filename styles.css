@@ -719,36 +719,80 @@ h3 {
 }
 
 .section-contact {
-  background: var(--sage);
+  background:
+    linear-gradient(90deg, rgba(231, 239, 232, 0.96), rgba(255, 255, 255, 0.86)),
+    var(--sage);
 }
 
 .contact-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 44px;
+  grid-template-columns: minmax(0, 0.85fr) minmax(360px, 0.72fr);
+  gap: 54px;
   align-items: center;
+}
+
+.contact-copy {
+  max-width: 620px;
+}
+
+.contact-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.contact-portrait {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  color: var(--white);
+  background: var(--ink);
+}
+
+.contact-portrait::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 45%;
+  content: "";
+  background: linear-gradient(0deg, rgba(17, 24, 39, 0.88), rgba(17, 24, 39, 0));
+}
+
+.contact-portrait img {
+  width: 100%;
+  height: 100%;
+  min-height: 430px;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.contact-portrait div {
+  position: absolute;
+  z-index: 1;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  display: grid;
+  gap: 4px;
+}
+
+.contact-portrait strong {
+  font-size: 1.4rem;
+}
+
+.contact-portrait span {
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .contact-actions {
   display: grid;
   gap: 12px;
-}
-
-.contact-person {
-  display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
-  gap: 28px;
-  align-items: center;
-}
-
-.contact-person img {
-  width: 170px;
-  aspect-ratio: 1;
-  border: 6px solid var(--white);
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center;
-  box-shadow: 0 18px 42px rgba(17, 24, 39, 0.14);
 }
 
 .contact-actions a {
@@ -805,6 +849,12 @@ body.chat-open .chat-panel {
 }
 
 body.chat-open .chat-launcher {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.hide-chat-launcher .chat-launcher {
+  transform: translateY(18px);
   opacity: 0;
   pointer-events: none;
 }
@@ -1148,13 +1198,18 @@ svg {
     min-height: 0;
   }
 
-  .contact-person {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  .contact-grid {
+    gap: 30px;
   }
 
-  .contact-person img {
-    width: 142px;
+  .contact-card {
+    padding: 12px;
+    margin-bottom: 72px;
+  }
+
+  .contact-portrait,
+  .contact-portrait img {
+    min-height: 390px;
   }
 
   .chat-panel {
