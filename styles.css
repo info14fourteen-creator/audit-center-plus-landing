@@ -732,6 +732,11 @@ body.chat-open .chat-panel {
   pointer-events: auto;
 }
 
+body.chat-open .chat-launcher {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .chat-header {
   justify-content: space-between;
   gap: 12px;
@@ -991,14 +996,59 @@ svg {
   }
 
   .chat-panel {
-    right: 12px;
-    bottom: 88px;
-    width: calc(100vw - 24px);
+    inset: 0;
+    width: 100vw;
+    height: 100svh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    transform: translateY(100%);
+    background: var(--white);
+    box-shadow: none;
+  }
+
+  body.chat-open .chat-panel {
+    transform: translateY(0);
+  }
+
+  body.chat-open .cookie-banner {
+    display: none;
+  }
+
+  .chat-header {
+    min-height: 74px;
+    padding: max(16px, env(safe-area-inset-top)) 16px 14px;
+  }
+
+  .chat-header .icon-button {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .chat-messages {
+    gap: 12px;
+    padding: 16px 14px;
+  }
+
+  .message {
+    max-width: 88%;
+    font-size: 0.98rem;
+  }
+
+  .chat-form {
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+    background: var(--white);
+  }
+
+  .chat-form input {
+    min-height: 50px;
   }
 
   .chat-launcher {
     right: 16px;
     bottom: 16px;
+    width: 58px;
+    height: 58px;
   }
 
   .cookie-banner {
