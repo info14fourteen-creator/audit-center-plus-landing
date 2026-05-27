@@ -33,7 +33,7 @@
       }
 
       main {
-        width: min(100%, 620px);
+        width: min(100%, 760px);
         padding: 42px;
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -67,6 +67,27 @@
         line-height: 1.7;
       }
 
+      .status-image {
+        display: block;
+        width: 100%;
+        margin: 26px 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background: #eef2f7;
+      }
+
+      .notice {
+        margin-top: 18px;
+        padding: 16px 18px;
+        border-left: 4px solid var(--accent);
+        border-radius: 6px;
+        color: var(--ink);
+        background: #f1f5f9;
+        font-weight: 700;
+      }
+
       @media (max-width: 600px) {
         main {
           padding: 28px;
@@ -79,6 +100,8 @@
       <div class="mark">А+</div>
       <h1>Сайт временно недоступен</h1>
       <p>Лендинг и чат-консультант отключены. Публикация будет восстановлена после отдельного решения.</p>
+      <img class="status-image" src="assets/client-silence-notice.jpg" alt="Скриншот переписки, размытый для защиты приватных данных" />
+      <p class="notice">Работы приостановлены из-за отсутствия обратной связи со стороны заказчика.</p>
     </main>
   </body>
 </html>
