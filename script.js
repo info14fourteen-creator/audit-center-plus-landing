@@ -14,6 +14,7 @@ const chatState = {
   responseTimer: null,
   responseSeq: 0,
   abortController: null,
+  lockedScrollY: 0,
 };
 
 const knowledgeBase = [
@@ -155,6 +156,60 @@ function randomDelay(min = 900, max = 2600) {
   return Math.round(min + Math.random() * (max - min));
 }
 
+function isSmallScreen() {
+  return window.matchMedia("(max-width: 700px)").matches;
+}
+
+function updateChatViewport() {
+  const viewport = window.visualViewport;
+  const height = viewport?.height || window.innerHeight;
+  const top = viewport?.offsetTop || 0;
+  document.documentElement.style.setProperty("--chat-viewport-height", `${Math.round(height)}px`);
+  document.documentElement.style.setProperty("--chat-viewport-top", `${Math.round(top)}px`);
+}
+
+function scrollChatToBottom(messages) {
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight;
+  });
+}
+
+function lockPageScroll() {
+  if (!isSmallScreen()) return;
+  chatState.lockedScrollY = window.scrollY;
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${chatState.lockedScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
+
+function unlockPageScroll() {
+  if (!document.body.style.position) return;
+  const scrollY = chatState.lockedScrollY || Math.abs(parseInt(document.body.style.top || "0", 10)) || 0;
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  window.scrollTo(0, scrollY);
+}
+
+function openChat(form, messages) {
+  updateChatViewport();
+  lockPageScroll();
+  document.body.classList.add("chat-open");
+  scrollChatToBottom(messages);
+  if (!isSmallScreen()) {
+    form.elements.question.focus();
+  }
+}
+
+function closeChat() {
+  document.body.classList.remove("chat-open");
+  unlockPageScroll();
+}
+
 function scoreQuestion(question, item) {
   const normalized = question.toLowerCase();
   return item.tags.reduce((score, tag) => {
@@ -228,7 +283,7 @@ function appendMessage(container, text, type = "bot") {
   message.className = `message ${type}`;
   message.textContent = text;
   container.append(message);
-  container.scrollTop = container.scrollHeight;
+  scrollChatToBottom(container);
   return message;
 }
 
@@ -239,7 +294,7 @@ function showTyping(container) {
   typing.dataset.typing = "true";
   typing.innerHTML = "<span></span><span></span><span></span>";
   container.append(typing);
-  container.scrollTop = container.scrollHeight;
+  scrollChatToBottom(container);
 }
 
 function removeTyping(container) {
@@ -330,12 +385,21 @@ function initChat() {
   chatState.history.push({ role: "assistant", content: greeting });
 
   launcher.addEventListener("click", () => {
-    document.body.classList.add("chat-open");
-    form.elements.question.focus();
+    openChat(form, messages);
   });
 
   close.addEventListener("click", () => {
-    document.body.classList.remove("chat-open");
+    closeChat();
+  });
+
+  form.elements.question.addEventListener("focus", () => {
+    updateChatViewport();
+    scrollChatToBottom(messages);
+  });
+
+  form.elements.question.addEventListener("input", () => {
+    updateChatViewport();
+    scrollChatToBottom(messages);
   });
 
   form.addEventListener("submit", (event) => {
@@ -363,3 +427,18 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("scroll", setHeaderState, { passive: true });
+window.addEventListener("resize", updateChatViewport, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (document.body.classList.contains("chat-open")) {
+      updateChatViewport();
+      const messages = document.querySelector("[data-chat-messages]");
+      if (messages) scrollChatToBottom(messages);
+    }
+  });
+  window.visualViewport.addEventListener("scroll", () => {
+    if (document.body.classList.contains("chat-open")) {
+      updateChatViewport();
+    }
+  });
+}
