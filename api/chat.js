@@ -1,5 +1,7 @@
 const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID || "asst_7Jbm61vLl63GVnOhQwZw6G8J";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
@@ -47,13 +49,105 @@ function normalizeMessages(history = [], question = "") {
 function extractLead(messages, currentLead = {}) {
   const text = messages.map((item) => item.content).join("\n");
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+  const textWithoutEmails = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, " ");
   const phone = text.match(/(?:\+?\d[\s\-()]*){10,}/)?.[0];
-  const telegram = text.match(/@[A-Z0-9_]{4,}/i)?.[0];
+  const telegram = textWithoutEmails.match(/(^|\s)(@[A-Z0-9_]{4,})/i)?.[2];
   return {
     ...currentLead,
     email: email || currentLead.email || "",
-    phone: telegram || phone || currentLead.phone || "",
+    phone: phone || telegram || currentLead.phone || "",
   };
+}
+
+function inferTopic(messages, lead = {}) {
+  if (lead.topic) return lead.topic;
+  const text = messages.map((item) => item.content).join(" ").toLowerCase();
+  if (/финмод|модель|банк|инвест|npv|irr|wacc|кредит/.test(text)) return "Финансовое моделирование";
+  if (/риск|матриц|свк|контрол|coso|iso/.test(text)) return "Матрица рисков и внутренний контроль";
+  if (/аудит|провер|отчет|учет|фсбу|фнс|налог/.test(text)) return "Аудит и проверка отчетности";
+  if (/затрат|марж|денеж|ликвид|долг|оборот/.test(text)) return "Финансовый анализ и оптимизация";
+  return "Первичная консультация";
+}
+
+function shouldNotifyLead(messages, lead = {}, notificationSent = false) {
+  if (notificationSent) return false;
+  if (!lead.email || !lead.phone) return false;
+  const userMessages = messages.filter((item) => item.role === "user");
+  const text = userMessages.map((item) => item.content).join(" ").toLowerCase();
+  const explicitReady = /спасибо|жду|готово|свяжитесь|перезвон|отправьте|можно.*созвон|давайте|оставляю|пишите|звоните/.test(text);
+  const hasBusinessContext =
+    (Boolean(lead.topic) && lead.topic !== "Первичная консультация") ||
+    /аудит|финмод|модель|банк|инвест|риск|свк|контрол|затрат|анализ|налог|отчет/.test(text);
+  return explicitReady || (hasBusinessContext && userMessages.length >= 2);
+}
+
+function buildLeadSummary(messages, lead, body, answer) {
+  const topic = inferTopic(messages, lead);
+  const userMessages = messages.filter((item) => item.role === "user").map((item) => item.content);
+  return [
+    "Новая заявка с лендинга Аудит Центр Плюс",
+    "",
+    `Тема: ${topic}`,
+    `Имя: ${lead.name || "не указано"}`,
+    `E-mail: ${lead.email || "не указан"}`,
+    `Телефон/Telegram: ${lead.phone || "не указан"}`,
+    `Session: ${body.sessionId || "нет"}`,
+    `Страница: ${body.page?.url || "нет"}`,
+    body.page?.referrer ? `Источник: ${body.page.referrer}` : "",
+    "",
+    "Последние сообщения клиента:",
+    userMessages.slice(-4).join("\n") || "нет",
+    "",
+    "Последний ответ консультанта:",
+    answer || "нет",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function sendTelegram(text) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return { configured: false, sent: false, reason: "telegram_not_configured" };
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: text.slice(0, 3900),
+      disable_web_page_preview: true,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(`Telegram send failed: ${data.description || response.status}`);
+  }
+  return { configured: true, sent: true, channel: "telegram" };
+}
+
+async function notifyLead(messages, lead, body, answer) {
+  const ready = shouldNotifyLead(messages, lead, body.notificationSent);
+  if (!ready) {
+    return {
+      ready: false,
+      sent: false,
+      configured: Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID),
+    };
+  }
+
+  try {
+    const summary = buildLeadSummary(messages, lead, body, answer);
+    const result = await sendTelegram(summary);
+    return { ready: true, ...result };
+  } catch (error) {
+    return {
+      ready: true,
+      configured: true,
+      sent: false,
+      reason: error.message || "telegram_send_failed",
+    };
+  }
 }
 
 module.exports = async function handler(req, res) {
@@ -75,6 +169,7 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
     const messages = normalizeMessages(body.history, body.question);
     const lead = extractLead(messages, body.lead || {});
+    lead.topic = inferTopic(messages, lead);
 
     const thread = await openai("/threads", {
       method: "POST",
@@ -101,7 +196,8 @@ module.exports = async function handler(req, res) {
 
     const list = await openai(`/threads/${thread.id}/messages?limit=1&order=desc`);
     const answer = list.data?.[0]?.content?.[0]?.text?.value || "";
-    res.status(200).json({ answer, lead });
+    const handoff = await notifyLead(messages, lead, body, answer);
+    res.status(200).json({ answer, lead, handoff, notification: handoff });
   } catch (error) {
     res.status(500).json({ error: error.message || "Chat failed" });
   }

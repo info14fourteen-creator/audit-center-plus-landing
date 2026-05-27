@@ -57,7 +57,47 @@ ALLOWED_ORIGIN=https://info14fourteen-creator.github.io
 - показывать случайную задержку и индикатор набора;
 - объединять несколько сообщений клиента, если они пришли до ответа;
 - отменять устаревший запрос и готовить новый ответ по полному контексту;
-- передавать историю диалога в backend.
+- передавать историю диалога в backend;
+- передавать `sessionId`, страницу, контакты и флаг уже отправленной заявки.
+
+## Передача лида менеджеру
+
+Backend считает диалог готовым к передаче, когда в переписке есть e-mail и телефон/Telegram, а также понятен бизнес-контекст или клиент явно просит связаться. После этого backend собирает краткое summary:
+
+- тема обращения;
+- имя, e-mail, телефон или Telegram;
+- session id, страница и источник;
+- последние сообщения клиента;
+- последний ответ консультанта.
+
+В продакшене сейчас используется Cloudflare Worker:
+
+```text
+https://audit-center-plus-chat.stan-at.workers.dev
+```
+
+Чтобы summary реально уходило в Telegram, нужно добавить два секрета Cloudflare Worker:
+
+```bash
+wrangler secret put TELEGRAM_BOT_TOKEN --name audit-center-plus-chat
+wrangler secret put TELEGRAM_CHAT_ID --name audit-center-plus-chat
+wrangler deploy
+```
+
+Если секреты не заданы, чат продолжит работать, а backend вернет:
+
+```json
+{
+  "handoff": {
+    "ready": true,
+    "configured": false,
+    "sent": false,
+    "reason": "telegram_not_configured"
+  }
+}
+```
+
+Это сделано специально: клиент не должен видеть ошибку только потому, что канал уведомлений еще не подключен.
 
 Пример контракта endpoint:
 
@@ -66,13 +106,20 @@ POST /chat
 Content-Type: application/json
 
 {
-  "question": "Нужна финмодель для банка",
-  "context": [
-    {
-      "title": "Финансовое моделирование",
-      "answer": "..."
-    }
-  ]
+  "sessionId": "chat-session-id",
+  "question": "Нужна финмодель для банка, почта client@example.com, телефон +79991234567",
+  "history": [],
+  "lead": {
+    "name": "",
+    "phone": "",
+    "email": "",
+    "topic": ""
+  },
+  "notificationSent": false,
+  "page": {
+    "url": "https://info14fourteen-creator.github.io/audit-center-plus-landing/",
+    "referrer": ""
+  }
 }
 ```
 
@@ -80,7 +127,18 @@ Content-Type: application/json
 
 ```json
 {
-  "answer": "Для банка обычно нужна трехсторонняя модель..."
+  "answer": "Для банка обычно нужна трехсторонняя модель...",
+  "lead": {
+    "email": "client@example.com",
+    "phone": "+79991234567",
+    "topic": "Финансовое моделирование"
+  },
+  "handoff": {
+    "ready": true,
+    "configured": true,
+    "sent": true,
+    "channel": "telegram"
+  }
 }
 ```
 

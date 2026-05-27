@@ -2,12 +2,18 @@ const CHAT_ENDPOINT = window.ACP_CHAT_ENDPOINT || "";
 const LEAD_EMAIL = "levchenkovairina@gmail.com";
 const operatorNames = ["Анна", "Мария", "Екатерина", "Ольга", "Наталья", "Светлана"];
 
+function createSessionId() {
+  return window.crypto?.randomUUID ? window.crypto.randomUUID() : `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 const chatState = {
+  sessionId: createSessionId(),
   operator: operatorNames[Math.floor(Math.random() * operatorNames.length)],
   topic: "",
   name: "",
   phone: "",
   email: "",
+  notificationSent: false,
   messages: 0,
   history: [],
   pendingUserTexts: [],
@@ -219,8 +225,9 @@ function scoreQuestion(question, item) {
 
 function collectLeadFields(text) {
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+  const textWithoutEmails = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, " ");
   const phone = text.match(/(?:\+?\d[\s\-()]*){10,}/)?.[0];
-  const telegram = text.match(/@[A-Z0-9_]{4,}/i)?.[0];
+  const telegram = textWithoutEmails.match(/(^|\s)(@[A-Z0-9_]{4,})/i)?.[2];
   const nameMatch = text.match(/(?:меня зовут|имя|я)\s+([А-ЯA-Z][а-яa-zё-]{2,})/i);
 
   if (email) chatState.email = email;
@@ -230,16 +237,31 @@ function collectLeadFields(text) {
   persistLeadState();
 }
 
+function restoreLeadState() {
+  if (!hasCookieConsent()) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem("acp_chat_lead") || "{}");
+    chatState.sessionId = saved.sessionId || chatState.sessionId;
+    chatState.topic = saved.topic || chatState.topic;
+    chatState.name = saved.name || chatState.name;
+    chatState.phone = saved.phone || chatState.phone;
+    chatState.email = saved.email || chatState.email;
+    chatState.notificationSent = Boolean(saved.notificationSent);
+  } catch {}
+}
+
 function persistLeadState() {
   if (!hasCookieConsent()) return;
   localStorage.setItem(
     "acp_chat_lead",
     JSON.stringify({
+      sessionId: chatState.sessionId,
       operator: chatState.operator,
       topic: chatState.topic,
       name: chatState.name,
       phone: chatState.phone,
       email: chatState.email,
+      notificationSent: chatState.notificationSent,
       messages: chatState.messages,
     })
   );
@@ -311,6 +333,7 @@ async function getChatAnswer(question, signal) {
     headers: { "Content-Type": "application/json" },
     signal,
     body: JSON.stringify({
+      sessionId: chatState.sessionId,
       question,
       history: chatState.history.slice(-12),
       lead: {
@@ -318,6 +341,11 @@ async function getChatAnswer(question, signal) {
         phone: chatState.phone,
         email: chatState.email,
         topic: chatState.topic,
+      },
+      notificationSent: chatState.notificationSent,
+      page: {
+        url: location.href,
+        referrer: document.referrer,
       },
     }),
   });
@@ -332,6 +360,10 @@ async function getChatAnswer(question, signal) {
     chatState.phone = data.lead.phone || chatState.phone;
     chatState.email = data.lead.email || chatState.email;
     chatState.topic = data.lead.topic || chatState.topic;
+    persistLeadState();
+  }
+  if (data.handoff?.sent || data.notification?.sent) {
+    chatState.notificationSent = true;
     persistLeadState();
   }
   return data.answer || localChatAnswer(question);
@@ -378,6 +410,7 @@ function initChat() {
   const messages = document.querySelector("[data-chat-messages]");
   const operatorName = document.querySelector("[data-operator-name]");
   if (!launcher || !close || !form || !messages) return;
+  restoreLeadState();
   if (operatorName) operatorName.textContent = chatState.operator;
 
   const greeting = `Здравствуйте, меня зовут ${chatState.operator}. Помогу понять, что подойдет: аудит, матрица рисков, финмодель или финансовый анализ. Расскажите, что сейчас нужно бизнесу?`;
