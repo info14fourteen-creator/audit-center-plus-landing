@@ -89,8 +89,7 @@ button {
 .ghost-button,
 .contact-actions a,
 .chat-header,
-.chat-form,
-.footer-inner {
+.chat-form {
   display: flex;
   align-items: center;
 }
@@ -880,12 +879,45 @@ body.chat-open .chat-launcher {
 }
 
 .footer-inner {
-  justify-content: space-between;
-  min-height: 66px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.9fr 1fr;
+  gap: 28px;
+  align-items: start;
+  padding: 34px 0;
 }
 
-.footer a {
+.footer a,
+.footer strong {
   color: var(--white);
+}
+
+.footer-brand {
+  width: fit-content;
+  margin-bottom: 14px;
+  color: var(--white);
+}
+
+.footer-main p {
+  max-width: 420px;
+  margin: 0;
+}
+
+.footer-requisites,
+.footer-address {
+  display: grid;
+  gap: 8px;
+  font-size: 0.94rem;
+}
+
+.footer-requisites span,
+.footer-address span,
+.footer-address a {
+  display: block;
+}
+
+.footer-address a {
+  width: fit-content;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 svg {
@@ -924,7 +956,8 @@ svg {
   .split.reverse,
   .cta-grid,
   .faq-layout,
-  .contact-grid {
+  .contact-grid,
+  .footer-inner {
     grid-template-columns: 1fr;
   }
 
