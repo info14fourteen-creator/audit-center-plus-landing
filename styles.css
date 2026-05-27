@@ -334,6 +334,10 @@ h3 {
   background: var(--paper);
 }
 
+.section[id] {
+  scroll-margin-top: 86px;
+}
+
 .section-light {
   background: var(--white);
 }
@@ -662,6 +666,58 @@ h3 {
   margin: 12px 0 0;
 }
 
+.press-grid {
+  display: grid;
+  grid-template-columns: 1.15fr repeat(3, 1fr);
+  gap: 16px;
+}
+
+.press-card {
+  display: flex;
+  min-height: 245px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.press-card:hover {
+  border-color: rgba(15, 118, 110, 0.45);
+  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.08);
+}
+
+.press-card span {
+  color: var(--teal);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.press-card p {
+  color: var(--muted);
+}
+
+.press-card strong {
+  color: var(--berry);
+}
+
+.press-card-featured {
+  color: var(--white);
+  background: var(--ink);
+}
+
+.press-card-featured span,
+.press-card-featured strong {
+  color: var(--gold);
+}
+
+.press-card-featured p {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 .section-contact {
   background: var(--sage);
 }
@@ -676,6 +732,23 @@ h3 {
 .contact-actions {
   display: grid;
   gap: 12px;
+}
+
+.contact-person {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.contact-person img {
+  width: 170px;
+  aspect-ratio: 1;
+  border: 6px solid var(--white);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  box-shadow: 0 18px 42px rgba(17, 24, 39, 0.14);
 }
 
 .contact-actions a {
@@ -968,7 +1041,8 @@ svg {
 
   .service-grid,
   .format-grid,
-  .signal-grid {
+  .signal-grid,
+  .press-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1063,6 +1137,19 @@ svg {
   .pain-list article {
     grid-template-columns: 34px 1fr;
     padding: 18px;
+  }
+
+  .press-card {
+    min-height: 0;
+  }
+
+  .contact-person {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .contact-person img {
+    width: 142px;
   }
 
   .chat-panel {
